@@ -1,47 +1,158 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const leaderRouter = express.Router();
-
 leaderRouter.use(bodyParser.json());
+const cors = require('./cors');
+const Leaders = require('../models/leaders');
+var authenticate = require('../authenticate');
 
-leaderRouter.route('/').all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-.get((req,res,next) => {
-    res.end('Will send all the leaders to you!');
-})
-.post((req, res, next) => {
-    res.end('Will add the leader: ' + req.body.name + ' with details: ' + req.body.description);
-})
-.put((req, res, next) => {
-    res.statusCode = 403;
-    res.end('PUT operation not supported on /leaders');
-})
-.delete((req, res, next) => {
-    res.end('Deleting all leaders');
-});
 
-leaderRouter.route('/:leaderId').all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-.get((req,res,next) => {
-    res.end('Will send details of the leader: ' + req.params.leaderId +' to you!');
-})
-.post((req, res, next) => {
-    res.statusCode = 403;
-    res.end('POST operation not supported on /leaders/'+ req.params.leaderId);
-})
-.put((req, res, next) => {
-    res.write('Updating the leader: ' + req.params.leaderId + '\n');
-    res.end('Will update the leader: ' + req.body.name + 
-            ' with details: ' + req.body.description);
-})
-.delete((req, res, next) => {
-    res.end('Deleting dish: ' + req.params.leaderId);
-});
+leaderRouter
+	.route('/')
+	.get(cors.cors, (req, res, next) => {
+		Leaders.find({})
+			.then(
+				(leaders) => {
+					res.statusCode = 200;
+					res.setHeader('Content-type', 'applicatin/json');
+					res.json(leaders);
+				},
+				(err) => {
+					console.log(err);
+				}
+			)
+			.catch((err) => {
+				console.log(err);
+			});
+	})
+	.post(
+		cors.corsWithOptions,
+		authenticate.verifyUser,
+		authenticate.verifyAdmin,
+		(req, res, next) => {
+			Leaders.create(req.body)
+				.then(
+					(leader) => {
+						console.log('leader created', leader);
+						res.statusCode = 200;
+						res.setHeader('Content-type', 'applicatin/json');
+						res.json(leader);
+					},
+					(err) => {
+						console.log(err);
+					}
+				)
+				.catch((err) => {
+					console.log(err);
+				});
+		}
+	)
+
+	.put(
+		cors.corsWithOptions,
+		authenticate.verifyUser,
+		authenticate.verifyAdmin,
+		(req, res, next) => {
+			res.statusCode = 403;
+			res.end('PUT operation not supported on /leaders');
+		}
+	)
+	.delete(
+		cors.corsWithOptions,
+		authenticate.verifyUser,
+		authenticate.verifyAdmin,
+		(req, res, next) => {
+			Leaders.remove({})
+				.then(
+					(resp) => {
+						res.statusCode = 200;
+						res.setHeader('Content-type', 'applicatin/json');
+						res.json(resp);
+					},
+					(err) => {
+						console.log(err);
+					}
+				)
+				.catch((err) => {
+					console.log(err);
+				});
+		}
+	);
+
+leaderRouter
+	.route('/:leaderId')
+	.get(cors.cors, (req, res, next) => {
+		Leaders.findById(leader.params.leaderId)
+			.then(
+				(leader) => {
+					res.statusCode = 200;
+					res.setHeader('Content-type', 'applicatin/json');
+					res.json(leader);
+				},
+				(err) => {
+					console.log(err);
+				}
+			)
+			.catch((err) => {
+				console.log(err);
+			});
+	})
+	.post(
+		cors.corsWithOptions,
+		authenticate.verifyUser,
+		authenticate.verifyAdmin,
+		(req, res, next) => {
+			res.statusCode = 403;
+			res.end('POST operation not supported on /leaders/' + req.params.leaderId);
+		}
+	)
+	.put(
+		cors.corsWithOptions,
+		authenticate.verifyUser,
+		authenticate.verifyAdmin,
+		(req, res, next) => {
+			Leaders.findByIdAndUpdate(
+				leader.params.leaderId,
+				{
+					$set: req.body,
+				},
+				{ new: true }
+			)
+				.then(
+					(leader) => {
+						res.statusCode = 200;
+						res.setHeader('Content-type', 'applicatin/json');
+						res.json(leader);
+					},
+					(err) => {
+						console.log(err);
+					}
+				)
+				.catch((err) => {
+					console.log(err);
+				});
+		}
+	)
+	.delete(
+		cors.corsWithOptions,
+		authenticate.verifyUser,
+		authenticate.verifyAdmin,
+		(req, res, next) => {
+			Leaders.findByIdAndDelete(leader.params.leaderId)
+				.then(
+					(resp) => {
+						res.statusCode = 200;
+						res.setHeader('Content-type', 'applicatin/json');
+						res.json(resp);
+					},
+					(err) => {
+						console.log(err);
+					}
+				)
+				.catch((err) => {
+					console.log(err);
+				});
+		}
+	);
 
 module.exports = leaderRouter;
